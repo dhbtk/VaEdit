@@ -9,6 +9,8 @@ namespace VaEdit {
 		public ConfigManager config_manager;
 		public HashMap<string,HashMap<string,string>> config;
 		private Gtk.AccelGroup accelerators;
+		private SList<Gtk.RadioMenuItem> language_radios = new SList<Gtk.RadioMenuItem>();
+		private LinkedList<Gtk.SourceLanguage> languages = new LinkedList<Gtk.SourceLanguage>();
 		
 		public GUI() {
 			// Setting up the GUI
@@ -64,7 +66,6 @@ namespace VaEdit {
 				foreach(File file in files) {
 					if(files_notebook.page_num(file.scroll) == files_notebook.page) {
 						print("\""+file.filepath+"\"\n");
-						bool dontdoit = false;
 						if(file.filepath.strip().length == 0) {
 							Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Choose a file name",main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
 							dialog.set_current_folder((file.filepath == "" ? Environment.get_home_dir() : file.filepath));
@@ -99,8 +100,7 @@ namespace VaEdit {
 			file_save_as.activate.connect(() => {
 				foreach(File file in files) {
 					if(files_notebook.page_num(file.scroll) == files_notebook.page) {
-						print("\""+file.filepath+"\"\n");
-						bool dontdoit = false;
+						print("\""+file.filepath+"\"\n");						bool dontdoit = false;
 						Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Choose a file name",main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
 						dialog.set_current_folder((file.filepath == "" ? Environment.get_home_dir() : file.filepath));
 						dialog.file_activated.connect(() => {
@@ -257,6 +257,48 @@ namespace VaEdit {
 				dialog.run();
 			});
 			edit_preferences.add_accelerator("activate",accelerators,Gdk.keyval_from_name("P"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
+			
+			// View menu
+			Gtk.MenuItem view_menu_item = new Gtk.MenuItem.with_mnemonic("_View");
+			menu_bar.append(view_menu_item);
+			Gtk.Menu view_menu = new Gtk.Menu();
+			view_menu_item.submenu = view_menu;
+			
+			// Languages submenu
+			Gtk.MenuItem view_languages_item = new Gtk.MenuItem.with_mnemonic("_Languaes");
+			Gtk.Menu view_languages = new Gtk.Menu();
+			view_languages_item.submenu = view_languages;
+			view_menu.append(view_languages_item);
+			
+			// Dynamically-generated radio buttons for languages
+			foreach(string id in Gtk.SourceLanguageManager.get_default().language_ids) {
+				languages.add(Gtk.SourceLanguageManager.get_default().get_language(id));
+			}
+			// "none" button
+			Gtk.RadioMenuItem none_button = new Gtk.RadioMenuItem.with_mnemonic(language_radios,"_None");
+			view_languages.append(none_button);
+			none_button.group_changed.connect(() => {
+				// It's better to place the logic here
+				foreach(Gtk.RadioMenuItem item in language_radios) {
+					if(item.active && current_file() != null) {
+						if(item == none_button) {
+							current_file().buffer.language = null;
+						} else {
+							foreach(Gtk.SourceLanguage language in languages) {
+								if(item.label == language.name) {
+									current_file().buffer.language = language;
+									break;
+								}
+							}
+						}
+						break;
+					}
+				}
+			});
+			foreach(Gtk.SourceLanguage language in languages) {
+				Gtk.RadioMenuItem lang = new Gtk.RadioMenuItem.with_label(language_radios,language.name);
+				view_languages.append(lang);
+			}
 			
 			// Notebook holding the files
 			files_notebook = new Gtk.Notebook();
