@@ -265,7 +265,7 @@ namespace VaEdit {
 			view_menu_item.submenu = view_menu;
 			
 			// Languages submenu
-			Gtk.MenuItem view_languages_item = new Gtk.MenuItem.with_mnemonic("_Languaes");
+			Gtk.MenuItem view_languages_item = new Gtk.MenuItem.with_mnemonic("_Languages");
 			Gtk.Menu view_languages = new Gtk.Menu();
 			view_languages_item.submenu = view_languages;
 			view_menu.append(view_languages_item);
@@ -277,11 +277,11 @@ namespace VaEdit {
 			// "none" button
 			Gtk.RadioMenuItem none_button = new Gtk.RadioMenuItem.with_mnemonic(language_radios,"_None");
 			view_languages.append(none_button);
-			none_button.group_changed.connect(() => {
+			none_button.group_changed.connect((nbtn) => { // Thanks to nemequ for workaround
 				// It's better to place the logic here
 				foreach(Gtk.RadioMenuItem item in language_radios) {
 					if(item.active && current_file() != null) {
-						if(item == none_button) {
+						if(item == nbtn) {
 							current_file().buffer.language = null;
 						} else {
 							foreach(Gtk.SourceLanguage language in languages) {
