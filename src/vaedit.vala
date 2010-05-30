@@ -310,6 +310,16 @@ namespace VaEdit {
 				view_languages.append(lang);
 			}
 			
+			// Previous file
+			Gtk.MenuItem view_prev_file = new Gtk.MenuItem.with_mnemonic("_Previous file");
+			view_prev_file.activate.connect(files_notebook.prev_page);
+			view_prev_file.add_accelerator("activate",accelerators,Gdk.keyval_from_name("pagedown"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
+			
+			// Next file
+			Gtk.MenuItem view_next_file = new Gtk.MenuItem.with_mnemonic("_Next file");
+			view_next_file.activate.connect(files_notebook.next_page);
+			view_prev_file.add_accelerator("activate",accelerators,Gdk.keyval_from_name("pageup"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
+			
 			// Notebook holding the files
 			files_notebook = new Gtk.Notebook();
 			files_notebook.switch_page.connect((page,num) => {update_title(file_at_page((int)num));});
@@ -357,10 +367,6 @@ namespace VaEdit {
 		}
 		
 		public void update_title(owned File? file = null) {
-			stdout.printf("%d\n",(int)language_radios.length());
-			if(file != null) {
-				print(file.filepath+file.filename+"\n");
-			}
 			if(file == null) {
 				file = current_file();
 			}
