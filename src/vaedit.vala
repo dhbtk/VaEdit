@@ -32,7 +32,7 @@ namespace VaEdit {
 			// Menus etc
 			
 			// File menu
-			Gtk.MenuItem file_menu_item = new Gtk.MenuItem.with_mnemonic("_File");
+			Gtk.MenuItem file_menu_item = new Gtk.MenuItem.with_mnemonic(_("_File"));
 			menu_bar.append(file_menu_item);
 			Gtk.Menu file_menu = new Gtk.Menu();
 			file_menu_item.submenu = file_menu;
@@ -46,7 +46,7 @@ namespace VaEdit {
 			Gtk.ImageMenuItem file_open = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_OPEN,accelerators);
 			file_menu.append(file_open);
 			file_open.activate.connect(() => {
-				Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Select file",main_window,Gtk.FileChooserAction.OPEN,Gtk.STOCK_OPEN,1,Gtk.STOCK_CANCEL,2,null);
+				Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog(_("Select file"),main_window,Gtk.FileChooserAction.OPEN,Gtk.STOCK_OPEN,1,Gtk.STOCK_CANCEL,2,null);
 				dialog.set_current_folder((current_file() != null && current_file().filepath != "" ? current_file().filepath : Environment.get_home_dir()));
 				dialog.file_activated.connect(() => {
 					open_file_from_path(dialog.get_filename().split("/"));
@@ -68,10 +68,10 @@ namespace VaEdit {
 					if(files_notebook.page_num(file.scroll) == files_notebook.page) {
 						print("\""+file.filepath+"\"\n");
 						if(file.filepath.strip().length == 0) {
-							Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Choose a file name",main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
+							Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog(_("Choose a file name"),main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
 							dialog.set_current_folder((file.filepath == "" ? Environment.get_home_dir() : file.filepath));
 							dialog.file_activated.connect(() => {
-								Gtk.MessageDialog confirm_dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,"That file alreadly exists. Overwrite?");
+								Gtk.MessageDialog confirm_dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,_("That file alreadly exists. Overwrite?"));
 								confirm_dialog.response.connect((id) => {
 									confirm_dialog.destroy();
 									if(id == Gtk.ResponseType.YES && dialog.get_filename() != null) {
@@ -101,11 +101,11 @@ namespace VaEdit {
 			file_save_as.activate.connect(() => {
 				foreach(File file in files) {
 					if(files_notebook.page_num(file.scroll) == files_notebook.page) {
-						print("\""+file.filepath+"\"\n");						bool dontdoit = false;
-						Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Choose a file name",main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
+						print("\""+file.filepath+"\"\n");
+						Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog(_("Choose a file name"),main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
 						dialog.set_current_folder((file.filepath == "" ? Environment.get_home_dir() : file.filepath));
 						dialog.file_activated.connect(() => {
-							Gtk.MessageDialog confirm_dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,"That file alreadly exists. Overwrite?");
+							Gtk.MessageDialog confirm_dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,_("That file alreadly exists. Overwrite?"));
 							confirm_dialog.response.connect((id) => {
 								confirm_dialog.destroy();
 								if(id == Gtk.ResponseType.YES) {
@@ -133,7 +133,7 @@ namespace VaEdit {
 				foreach(File file in files) {
 					if(files_notebook.page_num(file.scroll) == files_notebook.page) {
 						if(file.modified) {
-							Gtk.MessageDialog dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,"The file has unsaved changes, close anyway?");
+							Gtk.MessageDialog dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,_("The file has unsaved changes, close anyway?"));
 							dialog.response.connect((response) => {
 								dialog.destroy();
 								if(response == Gtk.ResponseType.YES) {
@@ -189,8 +189,8 @@ namespace VaEdit {
 			Gtk.ImageMenuItem edit_preferences = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_PREFERENCES,accelerators);
 			edit_menu.append(edit_preferences);
 			edit_preferences.activate.connect(() => {
-				Gtk.Dialog dialog = new Gtk.Dialog.with_buttons("Preferences",main_window,Gtk.DialogFlags.MODAL,Gtk.STOCK_SAVE,Gtk.ResponseType.ACCEPT,Gtk.STOCK_CANCEL,Gtk.ResponseType.REJECT,null);
-				Gtk.CheckButton auto_indent = new Gtk.CheckButton.with_label("Auto-indent");
+				Gtk.Dialog dialog = new Gtk.Dialog.with_buttons(_("Preferences"),main_window,Gtk.DialogFlags.MODAL,Gtk.STOCK_SAVE,Gtk.ResponseType.ACCEPT,Gtk.STOCK_CANCEL,Gtk.ResponseType.REJECT,null);
+				Gtk.CheckButton auto_indent = new Gtk.CheckButton.with_label(_("Auto-indent"));
 				dialog.vbox.pack_start(auto_indent,false,true,4);
 				
 				Gtk.HBox idwidth_hbox = new Gtk.HBox(false,0);
@@ -200,25 +200,25 @@ namespace VaEdit {
 				idwidth_hbox.pack_start(idwidth_label,false,true,0);
 				dialog.vbox.pack_start(idwidth_hbox,false,true,4);
 				
-				Gtk.CheckButton tabs_over_spaces = new Gtk.CheckButton.with_label("Insert tabs instead of spaces");
+				Gtk.CheckButton tabs_over_spaces = new Gtk.CheckButton.with_label(_("Insert tabs instead of spaces"));
 				dialog.vbox.pack_start(tabs_over_spaces,false,true,4);
 				
-				Gtk.CheckButton show_line_numbers = new Gtk.CheckButton.with_label("Show line numbers");
+				Gtk.CheckButton show_line_numbers = new Gtk.CheckButton.with_label(_("Show line numbers"));
 				dialog.vbox.pack_start(show_line_numbers,false,true,4);
 				
-				Gtk.CheckButton highlight_current_line = new Gtk.CheckButton.with_label("Highlight current line");
+				Gtk.CheckButton highlight_current_line = new Gtk.CheckButton.with_label(_("Highlight current line"));
 				dialog.vbox.pack_start(highlight_current_line,false,true,4);
 				
-				Gtk.CheckButton highlight_matching_brackets = new Gtk.CheckButton.with_label("Highlight matching brackets");
+				Gtk.CheckButton highlight_matching_brackets = new Gtk.CheckButton.with_label(_("Highlight matching brackets"));
 				dialog.vbox.pack_start(highlight_matching_brackets,false,true,4);
 				
-				Gtk.CheckButton show_right_margin = new Gtk.CheckButton.with_label("Show right margin");
+				Gtk.CheckButton show_right_margin = new Gtk.CheckButton.with_label(_("Show right margin"));
 				dialog.vbox.pack_start(show_right_margin,false,true,4);
 				
 				Gtk.HBox rmar_hbox = new Gtk.HBox(false,0);
 				Gtk.SpinButton right_margin_column = new Gtk.SpinButton.with_range(0,200,1);
 				rmar_hbox.pack_start(right_margin_column,false,true,0);
-				Gtk.Label rmar_label = new Gtk.Label("Right margin column");
+				Gtk.Label rmar_label = new Gtk.Label(_("Right margin column"));
 				rmar_hbox.pack_start(rmar_label,false,true,0);
 				dialog.vbox.pack_start(rmar_hbox,false,true,4);
 				
@@ -260,13 +260,13 @@ namespace VaEdit {
 			edit_preferences.add_accelerator("activate",accelerators,Gdk.keyval_from_name("P"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
 			
 			// View menu
-			Gtk.MenuItem view_menu_item = new Gtk.MenuItem.with_mnemonic("_View");
+			Gtk.MenuItem view_menu_item = new Gtk.MenuItem.with_mnemonic(_("_View"));
 			menu_bar.append(view_menu_item);
 			Gtk.Menu view_menu = new Gtk.Menu();
 			view_menu_item.submenu = view_menu;
 			
 			// Languages submenu
-			Gtk.MenuItem view_languages_item = new Gtk.MenuItem.with_mnemonic("_Languages");
+			Gtk.MenuItem view_languages_item = new Gtk.MenuItem.with_mnemonic(_("_Languages"));
 			Gtk.Menu view_languages = new Gtk.Menu();
 			view_languages_item.submenu = view_languages;
 			view_menu.append(view_languages_item);
@@ -285,7 +285,7 @@ namespace VaEdit {
 				}
 			});
 			// "none" button
-			none_button = new Gtk.RadioMenuItem.with_mnemonic(language_radios,"_None");
+			none_button = new Gtk.RadioMenuItem.with_mnemonic(language_radios,_("_None"));
 			//language_radios = none_button.get_group();
 			view_languages.append(none_button);
 			none_button.toggled.connect(() => {
@@ -311,12 +311,12 @@ namespace VaEdit {
 			}
 			
 			// Previous file
-			Gtk.MenuItem view_prev_file = new Gtk.MenuItem.with_mnemonic("_Previous file");
+			Gtk.MenuItem view_prev_file = new Gtk.MenuItem.with_mnemonic(_("_Previous file"));
 			view_prev_file.activate.connect(files_notebook.prev_page);
 			view_prev_file.add_accelerator("activate",accelerators,Gdk.keyval_from_name("pagedown"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
 			
 			// Next file
-			Gtk.MenuItem view_next_file = new Gtk.MenuItem.with_mnemonic("_Next file");
+			Gtk.MenuItem view_next_file = new Gtk.MenuItem.with_mnemonic(_("_Next file"));
 			view_next_file.activate.connect(files_notebook.next_page);
 			view_prev_file.add_accelerator("activate",accelerators,Gdk.keyval_from_name("pageup"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
 			
@@ -342,13 +342,13 @@ namespace VaEdit {
 				}
 			}
 			if(name == null) {
-				name = "untitled";
+				name = _("untitled");
 			}
 			if(path == null) {
 				path = "";
 			}
 			
-			if(files.size == 1 && files[0].filename == "untitled" && files[0].filepath == "" && files[0].modified == false) {
+			if(files.size == 1 && files[0].filename == _("untitled") && files[0].filepath == "" && files[0].modified == false) {
 				close_file(files[0]);
 			}
 			
@@ -430,7 +430,7 @@ namespace VaEdit {
 		private bool quit_app() {
 			foreach(File file in files) {
 				if(file.modified) {
-					Gtk.MessageDialog dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,"Some files have unsaved changes, quit anyway?");
+					Gtk.MessageDialog dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,_("Some files have unsaved changes, quit anyway?"));
 					bool quit = false;
 					dialog.response.connect((id) => {
 						dialog.destroy();
@@ -465,7 +465,7 @@ namespace VaEdit {
 				Gtk.SourceStyleScheme scheme;
 				
 				Gtk.SourceStyleSchemeManager.get_default().prepend_search_path("/usr/share/gtksourceview-2.0/styles");
-				foreach(string id in Gtk.SourceStyleSchemeManager.get_default().scheme_ids) {
+				foreach(string id in Gtk.SourceStyleSchemeManager.get_default().get_scheme_ids()) {
 					print(id+"\n");
 					print(Gtk.SourceStyleSchemeManager.get_default().get_scheme(id).name+"\n");
 					if(Gtk.SourceStyleSchemeManager.get_default().get_scheme(id).name == config["core"]["color_scheme"]) {
