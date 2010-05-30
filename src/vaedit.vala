@@ -45,16 +45,13 @@ namespace VaEdit {
 			file_open.activate.connect(() => {
 				Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Select file",main_window,Gtk.FileChooserAction.OPEN,Gtk.STOCK_OPEN,1,Gtk.STOCK_CANCEL,2,null);
 				dialog.set_current_folder((current_file() != null && current_file().filepath != "" ? current_file().filepath : Environment.get_home_dir()));
+				dialog.file_activated.connect(() => {
+					open_file_from_path(dialog.get_filename().split("/"));
+					dialog.destroy();
+				});
 				dialog.response.connect((id) => {
 					if(id==2){dialog.destroy(); return;}
-					print(dialog.get_filename()+"\n");
-					string file;
-					string path;
-					string[] raw_path = dialog.get_filename().split("/");
-					file = raw_path[raw_path.length-1];
-					raw_path = raw_path[0:raw_path.length-1];
-					path = string.joinv("/",raw_path)+"/";
-					open_file(file,path);
+					open_file_from_path(dialog.get_filename().split("/"));
 					dialog.destroy();
 				});
 				dialog.run();
@@ -71,25 +68,23 @@ namespace VaEdit {
 						if(file.filepath.strip().length == 0) {
 							Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Choose a file name",main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
 							dialog.set_current_folder((file.filepath == "" ? Environment.get_home_dir() : file.filepath));
+							dialog.file_activated.connect(() => {
+								Gtk.MessageDialog confirm_dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,"That file alreadly exists. Overwrite?");
+								confirm_dialog.response.connect((id) => {
+									confirm_dialog.destroy();
+									if(id == Gtk.ResponseType.YES && dialog.get_filename() != null) {
+										save_file(file,dialog.get_filename().split("/"));
+									}
+									dialog.destroy();
+								});
+								confirm_dialog.run();
+							});
 							dialog.response.connect((id) => {
-								if(id==2){dontdoit = true;dialog.destroy();return;}
-								string filename;
-								string path;
-								string[] raw_path = dialog.get_filename().split("/");
-								filename = raw_path[raw_path.length-1];
-								raw_path = raw_path[0:raw_path.length-1];
-								path = string.joinv("/",raw_path)+"/";
-								file.filename = filename;
-								file.filepath = path;
-								file.label.set_text(filename);
+								if(id==2){dialog.destroy(); return;}
+								save_file(file,dialog.get_filename().split("/"));
 								dialog.destroy();
 							});
 							dialog.run();
-						}
-						if(!dontdoit) {
-							FileUtils.set_contents(file.filepath+file.filename,file.view.buffer.text);
-							file.modified = false;
-							update_title();
 						}
 						break;
 					}
@@ -106,25 +101,23 @@ namespace VaEdit {
 						bool dontdoit = false;
 						Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Choose a file name",main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
 						dialog.set_current_folder((file.filepath == "" ? Environment.get_home_dir() : file.filepath));
+						dialog.file_activated.connect(() => {
+							Gtk.MessageDialog confirm_dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,"That file alreadly exists. Overwrite?");
+							confirm_dialog.response.connect((id) => {
+								confirm_dialog.destroy();
+								if(id == Gtk.ResponseType.YES) {
+									save_file(file,dialog.get_filename().split("/"));
+								}
+								dialog.destroy();
+							});
+							confirm_dialog.run();
+						});
 						dialog.response.connect((id) => {
-							if(id==2){dontdoit = true;dialog.destroy();return;}
-							string filename;
-							string path;
-							string[] raw_path = dialog.get_filename().split("/");
-							filename = raw_path[raw_path.length-1];
-							raw_path = raw_path[0:raw_path.length-1];
-							path = string.joinv("/",raw_path)+"/";
-							file.filename = filename;
-							file.filepath = path;
-							file.label.set_text(filename);
+							if(id==2){dialog.destroy(); return;}
+							save_file(file,dialog.get_filename().split("/"));
 							dialog.destroy();
 						});
 						dialog.run();
-						if(!dontdoit) {
-							FileUtils.set_contents(file.filepath+file.filename,file.view.buffer.text);
-							file.modified = false;
-							update_title();
-						}
 						break;
 					}
 				}
@@ -328,6 +321,29 @@ namespace VaEdit {
 		private void close_file(File file) {
 			files_notebook.remove_page(files_notebook.page_num(file.scroll));
 			files.remove(file);
+			update_title();
+		}
+		
+		private void open_file_from_path(string[] _raw_path) {
+			string file = _raw_path[_raw_path.length-1];
+			string[] raw_path = _raw_path[0:_raw_path.length-1];
+			string path = string.joinv("/",raw_path)+"/";
+			print(path+"\n");
+			print(file+"\n");
+			open_file(file,path);
+		}
+		
+		private void save_file(File file,string[]? _raw_path = null) {
+			if(_raw_path != null) {
+				string filename = _raw_path[_raw_path.length-1];
+				string[] raw_path = _raw_path[0:_raw_path.length-1];
+				string path = string.joinv("/",raw_path)+"/";
+				file.filename = filename;
+				file.filepath = path;
+				file.label.set_text(filename);
+			}
+			FileUtils.set_contents(file.filepath+file.filename,file.view.buffer.text);
+			file.modified = false;
 			update_title();
 		}
 		
