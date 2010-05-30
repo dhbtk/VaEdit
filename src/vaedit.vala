@@ -1,5 +1,6 @@
 using Gee;
 namespace VaEdit {
+	GUI gui;
 	public class GUI {
 		public Gtk.Window main_window;
 		public Gtk.MenuBar menu_bar;
@@ -15,6 +16,7 @@ namespace VaEdit {
 			main_window = new Gtk.Window(Gtk.WindowType.TOPLEVEL);
 			main_window.title = "VaEdit";
 			main_window.set_size_request(640,320);
+			main_window.delete_event.connect(quit_app);
 			main_window.destroy.connect(Gtk.main_quit);
 			main_window.add_accel_group(accelerators);
 			
@@ -37,9 +39,9 @@ namespace VaEdit {
 			Gtk.ImageMenuItem file_open = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_OPEN,accelerators);
 			file_menu.append(file_open);
 			file_open.activate.connect(() => {
-				Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Select file",main_window,Gtk.FileChooserAction.OPEN,Gtk.STOCK_OPEN,1,Gtk.STOCK_CANCEL,2);
+				Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Select file",main_window,Gtk.FileChooserAction.OPEN,Gtk.STOCK_OPEN,1,Gtk.STOCK_CANCEL,2,null);
 				dialog.response.connect((id) => {
-					if(id==2) return;
+					if(id==2){dialog.destroy(); return;}
 					print(dialog.get_filename()+"\n");
 					string file;
 					string path;
@@ -63,7 +65,7 @@ namespace VaEdit {
 						if(file.filepath.strip().length == 0) {
 							Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Choose a file name",main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
 							dialog.response.connect((id) => {
-								if(id==2){dontdoit = true;return;}
+								if(id==2){dontdoit = true;dialog.destroy();return;}
 								string filename;
 								string path;
 								string[] raw_path = dialog.get_filename().split("/");
@@ -77,7 +79,11 @@ namespace VaEdit {
 							});
 							dialog.run();
 						}
-						if(!dontdoit)FileUtils.set_contents(file.filepath+file.filename,file.view.buffer.text);
+						if(!dontdoit) {
+							FileUtils.set_contents(file.filepath+file.filename,file.view.buffer.text);
+							file.modified = false;
+							update_title();
+						}
 						break;
 					}
 				}
@@ -85,16 +91,69 @@ namespace VaEdit {
 			
 			Gtk.ImageMenuItem file_save_as = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_SAVE_AS,accelerators);
 			file_menu.append(file_save_as);
-			
+			file_save_as.activate.connect(() => {
+				foreach(File file in files) {
+					if(files_notebook.page_num(file.scroll) == files_notebook.page) {
+						print("\""+file.filepath+"\"\n");
+						bool dontdoit = false;
+						Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Choose a file name",main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
+						dialog.response.connect((id) => {
+							if(id==2){dontdoit = true;dialog.destroy();return;}
+							string filename;
+							string path;
+							string[] raw_path = dialog.get_filename().split("/");
+							filename = raw_path[raw_path.length-1];
+							raw_path = raw_path[0:raw_path.length-1];
+							path = string.joinv("/",raw_path)+"/";
+							file.filename = filename;
+							file.filepath = path;
+							file.label.set_text(filename);
+							dialog.destroy();
+						});
+						dialog.run();
+						if(!dontdoit) {
+							FileUtils.set_contents(file.filepath+file.filename,file.view.buffer.text);
+							file.modified = false;
+							update_title();
+						}
+						break;
+					}
+				}
+			});
 			
 			Gtk.ImageMenuItem file_close = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_CLOSE,accelerators);
 			file_menu.append(file_close);
-			
+			file_close.activate.connect(() => {
+				foreach(File file in files) {
+					if(files_notebook.page_num(file.scroll) == files_notebook.page) {
+						if(file.modified) {
+							Gtk.MessageDialog dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,"The file has unsaved changes, close anyway?");
+							dialog.response.connect((response) => {
+								dialog.destroy();
+								if(response == Gtk.ResponseType.YES) {
+									close_file(file);
+								} else {
+									return; // Do nothing
+								}
+							});
+							dialog.run();
+						} else {
+							close_file(file);
+						}
+						break;
+					}
+				}});
 			
 			Gtk.ImageMenuItem file_exit = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_QUIT,accelerators);
 			file_menu.append(file_exit);
+			file_exit.activate.connect(() => {
+				if(!quit_app()) {
+					Gtk.main_quit();
+				}
+			});
 			
 			files_notebook = new Gtk.Notebook();
+			files_notebook.switch_page.connect((page,num) => {update_title(file_at_page((int)num));});
 			main_vbox.pack_start(files_notebook,true,true,0);
 			
 			main_window.show_all();
@@ -102,7 +161,6 @@ namespace VaEdit {
 			files = new LinkedList<File>();
 			config_manager = new ConfigManager();
 			config = config_manager.config;
-			open_file();
 		}
 		
 		private bool open_file(string? name = null,string? path = null) {
@@ -126,6 +184,62 @@ namespace VaEdit {
 			apply_settings();
 			
 			return true;
+		}
+		
+		public File? current_file() {
+			foreach(File file in files) {
+				if(files_notebook.page_num(file.scroll) == files_notebook.page) {
+					return file;
+				}
+			}
+			return null;
+		}
+		
+		public void update_title(owned File? file = null) {
+			if(file == null) {
+				file = current_file();
+			}
+			if(file == null) {
+				main_window.title = "VaEdit";
+			} else {
+				main_window.title = (file.modified ? "* " : "")+file.filename+" - "+file.filepath+" - VaEdit";
+			}
+		}
+		
+		private File? file_at_page(int page) {
+			foreach(File file in files) {
+				if(files_notebook.page_num(file.scroll) == page) {
+					return file;
+				}
+			}
+			return null;
+		}
+		
+		private void close_file(File file) {
+			files_notebook.remove_page(files_notebook.page_num(file.scroll));
+			files.remove(file);
+			update_title();
+		}
+		
+		private bool quit_app() {
+			foreach(File file in files) {
+				if(file.modified) {
+					Gtk.MessageDialog dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,"Some files have unsaved changes, quit anyway?");
+					bool quit = false;
+					dialog.response.connect((id) => {
+						dialog.destroy();
+						if(id == Gtk.ResponseType.YES) {
+							quit = false;
+						} else {
+							quit = true;
+						}
+					});
+					dialog.run();
+					return quit;
+					break;
+				}
+			}
+			return false;
 		}
 		
 		private void apply_settings() {
@@ -165,6 +279,7 @@ namespace VaEdit {
 		public Gtk.SourceView view;
 		public Gtk.SourceBuffer buffer;
 		public Gtk.ScrolledWindow scroll;
+		public bool modified = false;
 		
 		public File(string filename,string filepath) throws Error {
 			this.filename = filename;
@@ -186,12 +301,13 @@ namespace VaEdit {
 				buffer.language = Gtk.SourceLanguageManager.get_default().guess_language(filepath+filename,(result_uncertain ? null : mimetype));
 				buffer.text = file;
 			}
+			buffer.changed.connect(() => {modified = true;gui.update_title();});
 		}
 	}
 	
 	void main(string[] args) {
 		Gtk.init(ref args);
-		GUI gui = new GUI();
+		gui = new GUI();
 		
 		Gtk.main();
 	}
