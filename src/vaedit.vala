@@ -11,6 +11,7 @@ namespace VaEdit {
 		private Gtk.AccelGroup accelerators;
 		private SList<Gtk.RadioMenuItem> language_radios = new SList<Gtk.RadioMenuItem>();
 		private LinkedList<Gtk.SourceLanguage> languages = new LinkedList<Gtk.SourceLanguage>();
+		public Gtk.RadioMenuItem none_button;
 		
 		public GUI() {
 			// Setting up the GUI
@@ -271,32 +272,41 @@ namespace VaEdit {
 			view_menu.append(view_languages_item);
 			
 			// Dynamically-generated radio buttons for languages
-			foreach(string id in Gtk.SourceLanguageManager.get_default().language_ids) {
+			foreach(string id in Gtk.SourceLanguageManager.get_default().get_language_ids()) {
 				languages.add(Gtk.SourceLanguageManager.get_default().get_language(id));
 			}
+			languages.sort((langa,langb) => {
+				if((langa as Gtk.SourceLanguage).name > (langb as Gtk.SourceLanguage).name) {
+					return 1;
+				} else if((langa as Gtk.SourceLanguage).name == (langb as Gtk.SourceLanguage).name) {
+					return 0;
+				} else {
+					return -1;
+				}
+			});
 			// "none" button
-			Gtk.RadioMenuItem none_button = new Gtk.RadioMenuItem.with_mnemonic(language_radios,"_None");
+			none_button = new Gtk.RadioMenuItem.with_mnemonic(language_radios,"_None");
+			//language_radios = none_button.get_group();
 			view_languages.append(none_button);
-			none_button.group_changed.connect((nbtn) => { // Thanks to nemequ for workaround
-				// It's better to place the logic here
-				foreach(Gtk.RadioMenuItem item in language_radios) {
-					if(item.active && current_file() != null) {
-						if(item == nbtn) {
-							current_file().buffer.language = null;
-						} else {
-							foreach(Gtk.SourceLanguage language in languages) {
-								if(item.label == language.name) {
-									current_file().buffer.language = language;
-									break;
-								}
-							}
-						}
-						break;
-					}
+			none_button.toggled.connect(() => {
+				if(none_button.active && current_file() != null) {
+					current_file().buffer.language = null;
 				}
 			});
 			foreach(Gtk.SourceLanguage language in languages) {
-				Gtk.RadioMenuItem lang = new Gtk.RadioMenuItem.with_label(language_radios,language.name);
+				Gtk.RadioMenuItem lang = new Gtk.RadioMenuItem.with_label_from_widget(none_button,language.name);
+				language_radios.append(lang);
+				lang.active = false;
+				lang.toggled.connect(() => {
+					if(lang.active) {
+						foreach(Gtk.SourceLanguage _language in languages) {
+							if(lang.label == _language.name && current_file() != null) {
+								current_file().buffer.language = _language;
+								break;
+							}
+						}
+					}
+				});
 				view_languages.append(lang);
 			}
 			
@@ -347,13 +357,29 @@ namespace VaEdit {
 		}
 		
 		public void update_title(owned File? file = null) {
+			stdout.printf("%d\n",(int)language_radios.length());
+			if(file != null) {
+				print(file.filepath+file.filename+"\n");
+			}
 			if(file == null) {
 				file = current_file();
 			}
 			if(file == null) {
 				main_window.title = "VaEdit";
+				none_button.active = true;
 			} else {
 				main_window.title = (file.modified ? "* " : "")+file.filename+" - "+file.filepath+" - VaEdit";
+				/*if(file.buffer.language == null) {
+					none_button.active = true;
+				} else {
+					print(file.buffer.language.name+"\n");
+					foreach(Gtk.RadioMenuItem button in language_radios) {
+						if(button.label == file.buffer.language.name) {
+							button.active = true;
+							break;
+						}
+					}
+				}*/
 			}
 		}
 		
