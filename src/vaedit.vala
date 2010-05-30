@@ -152,6 +152,103 @@ namespace VaEdit {
 				}
 			});
 			
+			Gtk.MenuItem edit_menu_item = new Gtk.MenuItem.with_mnemonic("_Edit");
+			menu_bar.append(edit_menu_item);
+			Gtk.Menu edit_menu = new Gtk.Menu();
+			edit_menu_item.submenu = edit_menu;
+			
+			Gtk.ImageMenuItem edit_undo = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_UNDO,accelerators);
+			edit_menu.append(edit_undo);
+			edit_undo.activate.connect(() => {
+				if(current_file() != null) {
+					current_file().buffer.undo();
+				}
+			});
+			edit_undo.add_accelerator("activate",accelerators,Gdk.keyval_from_name("Z"),Gdk.ModifierType.CONTROL_MASK,Gtk.AccelFlags.VISIBLE);
+			
+			Gtk.ImageMenuItem edit_redo = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_REDO,accelerators);
+			edit_menu.append(edit_redo);
+			edit_redo.activate.connect(() => {
+				if(current_file() != null) {
+					current_file().buffer.redo();
+				}
+			});
+			edit_redo.add_accelerator("activate",accelerators,Gdk.keyval_from_name("Z"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.SHIFT_MASK,Gtk.AccelFlags.VISIBLE);
+			
+			Gtk.ImageMenuItem edit_preferences = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_PREFERENCES,accelerators);
+			edit_menu.append(edit_preferences);
+			edit_preferences.activate.connect(() => {
+				Gtk.Dialog dialog = new Gtk.Dialog.with_buttons("Preferences",main_window,Gtk.DialogFlags.MODAL,Gtk.STOCK_SAVE,Gtk.ResponseType.ACCEPT,Gtk.STOCK_CANCEL,Gtk.ResponseType.REJECT,null);
+				Gtk.CheckButton auto_indent = new Gtk.CheckButton.with_label("Auto-indent");
+				dialog.vbox.pack_start(auto_indent,false,true,4);
+				
+				Gtk.HBox idwidth_hbox = new Gtk.HBox(false,0);
+				Gtk.SpinButton indentation_width = new Gtk.SpinButton.with_range(0,100,1);
+				idwidth_hbox.pack_start(indentation_width,false,true,0);
+				Gtk.Label idwidth_label = new Gtk.Label("Indentation width");
+				idwidth_hbox.pack_start(idwidth_label,false,true,0);
+				dialog.vbox.pack_start(idwidth_hbox,false,true,4);
+				
+				Gtk.CheckButton tabs_over_spaces = new Gtk.CheckButton.with_label("Insert tabs instead of spaces");
+				dialog.vbox.pack_start(tabs_over_spaces,false,true,4);
+				
+				Gtk.CheckButton show_line_numbers = new Gtk.CheckButton.with_label("Show line numbers");
+				dialog.vbox.pack_start(show_line_numbers,false,true,4);
+				
+				Gtk.CheckButton highlight_current_line = new Gtk.CheckButton.with_label("Highlight current line");
+				dialog.vbox.pack_start(highlight_current_line,false,true,4);
+				
+				Gtk.CheckButton highlight_matching_brackets = new Gtk.CheckButton.with_label("Highlight matching brackets");
+				dialog.vbox.pack_start(highlight_matching_brackets,false,true,4);
+				
+				Gtk.CheckButton show_right_margin = new Gtk.CheckButton.with_label("Show right margin");
+				dialog.vbox.pack_start(show_right_margin,false,true,4);
+				
+				Gtk.HBox rmar_hbox = new Gtk.HBox(false,0);
+				Gtk.SpinButton right_margin_column = new Gtk.SpinButton.with_range(0,200,1);
+				rmar_hbox.pack_start(right_margin_column,false,true,0);
+				Gtk.Label rmar_label = new Gtk.Label("Right margin column");
+				rmar_hbox.pack_start(rmar_label,false,true,0);
+				dialog.vbox.pack_start(rmar_hbox,false,true,4);
+				
+				Gtk.Label font_label = new Gtk.Label("Font:");
+				dialog.vbox.pack_start(font_label,false,true,4);
+				Gtk.FontButton font = new Gtk.FontButton.with_font(config["core"]["font"]);
+				dialog.vbox.pack_start(font,false,true,4);
+				
+				dialog.show_all();
+				
+				// Feeding data
+				auto_indent.active                 = config["core"]["auto_indent"] == "true";
+				indentation_width.value            = config["core"]["indent_width"].to_int();
+				tabs_over_spaces.active            = config["core"]["indent_with_tabs"] == "true";
+				show_line_numbers.active           = config["core"]["show_line_numbers"] == "true";
+				highlight_current_line.active      = config["core"]["highlight_current_line"] == "true";
+				highlight_matching_brackets.active = config["core"]["highlight_matching_brackets"] == "true";
+				show_right_margin.active           = config["core"]["show_right_margin"] == "true";
+				right_margin_column.value          = config["core"]["right_margin_position"].to_int();
+				dialog.response.connect((id) => {
+					dialog.destroy();
+					if(id == Gtk.ResponseType.ACCEPT) {
+						config["core"]["auto_indent"]       = auto_indent.active ? "true" : "false";
+						config["core"]["indent_width"]      = indentation_width.value.to_string();
+						config["core"]["indent_with_tabs"]  = tabs_over_spaces.active ? "true" : "false";
+						config["core"]["show_line_numbers"] = show_line_numbers.active ? "true" : "false";
+						config["core"]["highlight_current_line"] = highlight_current_line.active ? "true" : "false";
+						config["core"]["highlight_matching_brackets"] = highlight_matching_brackets.active ? "true" : "false";
+						config["core"]["show_right_margin"] = show_right_margin.active ? "true" : "false";
+						config["core"]["font"] = font.font_name;
+						config_manager.save_data();
+						apply_settings();
+					} else {
+						return;
+					}
+				});
+				dialog.run();
+			});
+			edit_preferences.add_accelerator("activate",accelerators,Gdk.keyval_from_name("P"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
+			
+			
 			files_notebook = new Gtk.Notebook();
 			files_notebook.switch_page.connect((page,num) => {update_title(file_at_page((int)num));});
 			main_vbox.pack_start(files_notebook,true,true,0);
@@ -187,12 +284,7 @@ namespace VaEdit {
 		}
 		
 		public File? current_file() {
-			foreach(File file in files) {
-				if(files_notebook.page_num(file.scroll) == files_notebook.page) {
-					return file;
-				}
-			}
-			return null;
+			return file_at_page(files_notebook.page);
 		}
 		
 		public void update_title(owned File? file = null) {
@@ -236,7 +328,6 @@ namespace VaEdit {
 					});
 					dialog.run();
 					return quit;
-					break;
 				}
 			}
 			return false;
@@ -254,6 +345,7 @@ namespace VaEdit {
 				file.view.show_line_numbers = config["core"]["show_line_numbers"] == "true";
 				file.view.show_right_margin = config["core"]["show_right_margin"] == "true";
 				file.view.right_margin_position = config["core"]["right_margin_position"].to_int();
+				file.buffer.highlight_matching_brackets = config["core"]["highlight_matching_brackets"] == "true";
 				file.view.modify_font(Pango.FontDescription.from_string(config["core"]["font"]));
 				
 				Gtk.SourceStyleScheme scheme;
@@ -299,7 +391,9 @@ namespace VaEdit {
 				FileUtils.get_contents(filepath+filename,out file);
 				string mimetype = g_content_type_guess(filepath+filename,(uchar[])file.to_utf8(),out result_uncertain);
 				buffer.language = Gtk.SourceLanguageManager.get_default().guess_language(filepath+filename,(result_uncertain ? null : mimetype));
+				buffer.begin_not_undoable_action();
 				buffer.text = file;
+				buffer.end_not_undoable_action();
 			}
 			buffer.changed.connect(() => {modified = true;gui.update_title();});
 		}

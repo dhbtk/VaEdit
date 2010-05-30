@@ -55,5 +55,16 @@ namespace VaEdit {
 				}
 			}
 		}
+		
+		public void save_data() {
+			string output = "";
+			foreach(string section in config.keys) {
+				output += "["+section+"]\n";
+				foreach(string key in config[section].keys) {
+					output += key+" = "+config[section][key]+"\n";
+				}
+			}
+			FileUtils.set_contents(Environment.get_home_dir()+"/.vaeditrc",output);
+		}
 	}
 }
