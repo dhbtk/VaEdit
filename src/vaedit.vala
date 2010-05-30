@@ -27,19 +27,24 @@ namespace VaEdit {
 			main_vbox.pack_start(menu_bar,false,true,0);
 			
 			// Menus etc
+			
+			// File menu
 			Gtk.MenuItem file_menu_item = new Gtk.MenuItem.with_mnemonic("_File");
 			menu_bar.append(file_menu_item);
 			Gtk.Menu file_menu = new Gtk.Menu();
 			file_menu_item.submenu = file_menu;
 			
+			// New file
 			Gtk.ImageMenuItem file_new = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_NEW,accelerators);
 			file_menu.append(file_new);
 			file_new.activate.connect(() => {open_file(null,null);});
 			
+			// Open file
 			Gtk.ImageMenuItem file_open = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_OPEN,accelerators);
 			file_menu.append(file_open);
 			file_open.activate.connect(() => {
 				Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Select file",main_window,Gtk.FileChooserAction.OPEN,Gtk.STOCK_OPEN,1,Gtk.STOCK_CANCEL,2,null);
+				dialog.set_current_folder((current_file() != null && current_file().filepath != "" ? current_file().filepath : Environment.get_home_dir()));
 				dialog.response.connect((id) => {
 					if(id==2){dialog.destroy(); return;}
 					print(dialog.get_filename()+"\n");
@@ -55,6 +60,7 @@ namespace VaEdit {
 				dialog.run();
 			});
 			
+			// Save file
 			Gtk.ImageMenuItem file_save = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_SAVE,accelerators);
 			file_menu.append(file_save);
 			file_save.activate.connect(() => {
@@ -64,6 +70,7 @@ namespace VaEdit {
 						bool dontdoit = false;
 						if(file.filepath.strip().length == 0) {
 							Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Choose a file name",main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
+							dialog.set_current_folder((file.filepath == "" ? Environment.get_home_dir() : file.filepath));
 							dialog.response.connect((id) => {
 								if(id==2){dontdoit = true;dialog.destroy();return;}
 								string filename;
@@ -89,6 +96,7 @@ namespace VaEdit {
 				}
 			});
 			
+			// Save as...
 			Gtk.ImageMenuItem file_save_as = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_SAVE_AS,accelerators);
 			file_menu.append(file_save_as);
 			file_save_as.activate.connect(() => {
@@ -97,6 +105,7 @@ namespace VaEdit {
 						print("\""+file.filepath+"\"\n");
 						bool dontdoit = false;
 						Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog("Choose a file name",main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
+						dialog.set_current_folder((file.filepath == "" ? Environment.get_home_dir() : file.filepath));
 						dialog.response.connect((id) => {
 							if(id==2){dontdoit = true;dialog.destroy();return;}
 							string filename;
@@ -121,6 +130,7 @@ namespace VaEdit {
 				}
 			});
 			
+			// Close file
 			Gtk.ImageMenuItem file_close = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_CLOSE,accelerators);
 			file_menu.append(file_close);
 			file_close.activate.connect(() => {
@@ -144,6 +154,7 @@ namespace VaEdit {
 					}
 				}});
 			
+			// Quit editor
 			Gtk.ImageMenuItem file_exit = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_QUIT,accelerators);
 			file_menu.append(file_exit);
 			file_exit.activate.connect(() => {
@@ -152,11 +163,13 @@ namespace VaEdit {
 				}
 			});
 			
+			// Edit
 			Gtk.MenuItem edit_menu_item = new Gtk.MenuItem.with_mnemonic("_Edit");
 			menu_bar.append(edit_menu_item);
 			Gtk.Menu edit_menu = new Gtk.Menu();
 			edit_menu_item.submenu = edit_menu;
 			
+			// Undo
 			Gtk.ImageMenuItem edit_undo = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_UNDO,accelerators);
 			edit_menu.append(edit_undo);
 			edit_undo.activate.connect(() => {
@@ -166,6 +179,7 @@ namespace VaEdit {
 			});
 			edit_undo.add_accelerator("activate",accelerators,Gdk.keyval_from_name("Z"),Gdk.ModifierType.CONTROL_MASK,Gtk.AccelFlags.VISIBLE);
 			
+			// Redo
 			Gtk.ImageMenuItem edit_redo = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_REDO,accelerators);
 			edit_menu.append(edit_redo);
 			edit_redo.activate.connect(() => {
@@ -175,6 +189,7 @@ namespace VaEdit {
 			});
 			edit_redo.add_accelerator("activate",accelerators,Gdk.keyval_from_name("Z"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.SHIFT_MASK,Gtk.AccelFlags.VISIBLE);
 			
+			// Preferences
 			Gtk.ImageMenuItem edit_preferences = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_PREFERENCES,accelerators);
 			edit_menu.append(edit_preferences);
 			edit_preferences.activate.connect(() => {
@@ -248,7 +263,7 @@ namespace VaEdit {
 			});
 			edit_preferences.add_accelerator("activate",accelerators,Gdk.keyval_from_name("P"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
 			
-			
+			// Notebook holding the files
 			files_notebook = new Gtk.Notebook();
 			files_notebook.switch_page.connect((page,num) => {update_title(file_at_page((int)num));});
 			main_vbox.pack_start(files_notebook,true,true,0);
@@ -258,6 +273,9 @@ namespace VaEdit {
 			files = new LinkedList<File>();
 			config_manager = new ConfigManager();
 			config = config_manager.config;
+			
+			// Default file
+			open_file();
 		}
 		
 		private bool open_file(string? name = null,string? path = null) {
