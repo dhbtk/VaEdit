@@ -85,6 +85,8 @@ namespace VaEdit {
 								dialog.destroy();
 							});
 							dialog.run();
+						} else {
+							save_file(file);
 						}
 						break;
 					}
@@ -282,6 +284,10 @@ namespace VaEdit {
 			}
 			if(path == null) {
 				path = "";
+			}
+			
+			if(files.size == 1 && files[0].filename == "untitled" && files[0].filepath == "" && files[0].modified == false) {
+				close_file(files[0]);
 			}
 			
 			File file = new File(name,path);
