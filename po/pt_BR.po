@@ -1,0 +1,97 @@
+# VaEdit
+# Copyright (C) 2010 NieXS
+# This file is distributed under the new BSD license.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: VaEdit 0.1\n"
+"Report-Msgid-Bugs-To: NieXS <neo dot niexs at gmail dot com>\n"
+"POT-Creation-Date: 2010-05-30 21:52-0300\n"
+"PO-Revision-Date: 2010-05-30 21:56-0300\n"
+"Last-Translator:  <neo.niexs@gmail.com>\n"
+"Language-Team: Brazilian Portuguese\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: vaedit/vaedit.vala:35
+msgid "_File"
+msgstr "_Arquivo"
+
+#: vaedit/vaedit.vala:49
+msgid "Select file"
+msgstr "Selecione um arquivo"
+
+#: vaedit/vaedit.vala:71 vaedit/vaedit.vala:105
+msgid "Choose a file name"
+msgstr "Escolha um nome de arquivo"
+
+#: vaedit/vaedit.vala:74 vaedit/vaedit.vala:108
+msgid "That file alreadly exists. Overwrite?"
+msgstr "Este arquivo já existe. Sobrescrever?"
+
+#: vaedit/vaedit.vala:136
+msgid "The file has unsaved changes, close anyway?"
+msgstr "O arquivo possui alterações não salvas, fechá-lo?"
+
+#: vaedit/vaedit.vala:192
+msgid "Preferences"
+msgstr "Preferências"
+
+#: vaedit/vaedit.vala:193
+msgid "Auto-indent"
+msgstr "Indentar automaticamente"
+
+#: vaedit/vaedit.vala:203
+msgid "Insert tabs instead of spaces"
+msgstr "Inserir tabs ao invés de espaços"
+
+#: vaedit/vaedit.vala:206
+msgid "Show line numbers"
+msgstr "Mostrar números da linha"
+
+#: vaedit/vaedit.vala:209
+msgid "Highlight current line"
+msgstr "Destacar linha atual"
+
+#: vaedit/vaedit.vala:212
+msgid "Highlight matching brackets"
+msgstr "Destacar parênteses correspondentes"
+
+#: vaedit/vaedit.vala:215
+msgid "Show right margin"
+msgstr "Mostrar margem da direita"
+
+#: vaedit/vaedit.vala:221
+msgid "Right margin column"
+msgstr "Coluna da margem da direita"
+
+#: vaedit/vaedit.vala:263
+msgid "_View"
+msgstr "_Ver"
+
+#: vaedit/vaedit.vala:269
+msgid "_Languages"
+msgstr "_Linguagens"
+
+#: vaedit/vaedit.vala:288
+msgid "_None"
+msgstr "_Nenhuma"
+
+#: vaedit/vaedit.vala:314
+msgid "_Previous file"
+msgstr "Arquivo _anterior"
+
+#: vaedit/vaedit.vala:319
+msgid "_Next file"
+msgstr "_Próximo arquivo"
+
+#: vaedit/vaedit.vala:345 vaedit/vaedit.vala:351
+msgid "untitled"
+msgstr "sem título"
+
+#: vaedit/vaedit.vala:433
+msgid "Some files have unsaved changes, quit anyway?"
+msgstr "Alguns arquivos possuem alterações não salvas, fechar?"

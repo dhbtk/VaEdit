@@ -53,7 +53,7 @@ namespace VaEdit {
 					dialog.destroy();
 				});
 				dialog.response.connect((id) => {
-					if(id==2){dialog.destroy(); return;}
+					if(id==2 || dialog.get_filename() == null){dialog.destroy(); return;}
 					open_file_from_path(dialog.get_filename().split("/"));
 					dialog.destroy();
 				});
