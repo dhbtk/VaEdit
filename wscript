@@ -35,4 +35,4 @@ def configure(conf):
 def build(bld):
 	bld.add_subdirs('vaedit')
 	bld.add_subdirs('po')
-	bld.install_files(bld.env['PREFIX']+'/share/licenses/'+APPNAME,'LICENSE')
+	bld.install_files(bld.env['PREFIX']+'/share/licenses/'+'vaedit','LICENSE')
