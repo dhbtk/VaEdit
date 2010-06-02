@@ -40,115 +40,27 @@ namespace VaEdit {
 			// New file
 			Gtk.ImageMenuItem file_new = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_NEW,accelerators);
 			file_menu.append(file_new);
-			file_new.activate.connect(() => {open_file(null,null);});
+			file_new.activate.connect(()=>{open_file();});
 			
 			// Open file
 			Gtk.ImageMenuItem file_open = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_OPEN,accelerators);
 			file_menu.append(file_open);
-			file_open.activate.connect(() => {
-				Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog(_("Select file"),main_window,Gtk.FileChooserAction.OPEN,Gtk.STOCK_OPEN,1,Gtk.STOCK_CANCEL,2,null);
-				dialog.set_current_folder((current_file() != null && current_file().filepath != "" ? current_file().filepath : Environment.get_home_dir()));
-				dialog.file_activated.connect(() => {
-					open_file_from_path(dialog.get_filename().split("/"));
-					dialog.destroy();
-				});
-				dialog.response.connect((id) => {
-					if(id==2 || dialog.get_filename() == null){dialog.destroy(); return;}
-					open_file_from_path(dialog.get_filename().split("/"));
-					dialog.destroy();
-				});
-				dialog.run();
-			});
+			file_open.activate.connect(menu_file_open);
 			
 			// Save file
 			Gtk.ImageMenuItem file_save = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_SAVE,accelerators);
 			file_menu.append(file_save);
-			file_save.activate.connect(() => {
-				foreach(File file in files) {
-					if(files_notebook.page_num(file.scroll) == files_notebook.page) {
-						print("\""+file.filepath+"\"\n");
-						if(file.filepath.strip().length == 0) {
-							Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog(_("Choose a file name"),main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
-							dialog.set_current_folder((file.filepath == "" ? Environment.get_home_dir() : file.filepath));
-							dialog.file_activated.connect(() => {
-								Gtk.MessageDialog confirm_dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,_("That file alreadly exists. Overwrite?"));
-								confirm_dialog.response.connect((id) => {
-									confirm_dialog.destroy();
-									if(id == Gtk.ResponseType.YES && dialog.get_filename() != null) {
-										save_file(file,dialog.get_filename().split("/"));
-									}
-									dialog.destroy();
-								});
-								confirm_dialog.run();
-							});
-							dialog.response.connect((id) => {
-								if(id==2){dialog.destroy(); return;}
-								save_file(file,dialog.get_filename().split("/"));
-								dialog.destroy();
-							});
-							dialog.run();
-						} else {
-							save_file(file);
-						}
-						break;
-					}
-				}
-			});
+			file_save.activate.connect(menu_file_save);
 			
 			// Save as...
 			Gtk.ImageMenuItem file_save_as = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_SAVE_AS,accelerators);
 			file_menu.append(file_save_as);
-			file_save_as.activate.connect(() => {
-				foreach(File file in files) {
-					if(files_notebook.page_num(file.scroll) == files_notebook.page) {
-						print("\""+file.filepath+"\"\n");
-						Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog(_("Choose a file name"),main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
-						dialog.set_current_folder((file.filepath == "" ? Environment.get_home_dir() : file.filepath));
-						dialog.file_activated.connect(() => {
-							Gtk.MessageDialog confirm_dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,_("That file alreadly exists. Overwrite?"));
-							confirm_dialog.response.connect((id) => {
-								confirm_dialog.destroy();
-								if(id == Gtk.ResponseType.YES) {
-									save_file(file,dialog.get_filename().split("/"));
-								}
-								dialog.destroy();
-							});
-							confirm_dialog.run();
-						});
-						dialog.response.connect((id) => {
-							if(id==2){dialog.destroy(); return;}
-							save_file(file,dialog.get_filename().split("/"));
-							dialog.destroy();
-						});
-						dialog.run();
-						break;
-					}
-				}
-			});
+			file_save_as.activate.connect(menu_file_save_as);
 			
 			// Close file
 			Gtk.ImageMenuItem file_close = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_CLOSE,accelerators);
 			file_menu.append(file_close);
-			file_close.activate.connect(() => {
-				foreach(File file in files) {
-					if(files_notebook.page_num(file.scroll) == files_notebook.page) {
-						if(file.modified) {
-							Gtk.MessageDialog dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,_("The file has unsaved changes, close anyway?"));
-							dialog.response.connect((response) => {
-								dialog.destroy();
-								if(response == Gtk.ResponseType.YES) {
-									close_file(file);
-								} else {
-									return; // Do nothing
-								}
-							});
-							dialog.run();
-						} else {
-							close_file(file);
-						}
-						break;
-					}
-				}});
+			file_close.activate.connect(menu_file_close);
 			
 			// Quit editor
 			Gtk.ImageMenuItem file_exit = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_QUIT,accelerators);
@@ -341,6 +253,25 @@ namespace VaEdit {
 			view_next_file.activate.connect(files_notebook.next_page);
 			view_prev_file.add_accelerator("activate",accelerators,Gdk.keyval_from_name("pageup"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
 			
+			// Toolbar!
+			Gtk.Toolbar toolbar = new Gtk.Toolbar();
+			main_vbox.pack_start(toolbar,false,true,0);
+			
+			// New file
+			Gtk.ToolButton new_button = new Gtk.ToolButton.from_stock(Gtk.STOCK_NEW);
+			toolbar.insert(new_button,0);
+			new_button.clicked.connect(()=>{open_file();});
+			// Open file
+			Gtk.ToolButton open_button = new Gtk.ToolButton.from_stock(Gtk.STOCK_OPEN);
+			toolbar.insert(open_button,1);
+			open_button.clicked += menu_file_open;
+			// Separator
+			toolbar.insert(new Gtk.SeparatorToolItem(),2);
+			// Save file
+			Gtk.ToolButton save_button = new Gtk.ToolButton.from_stock(Gtk.STOCK_SAVE);
+			toolbar.insert(save_button,3);
+			save_button.clicked += menu_file_save;
+			
 			// Notebook holding the files
 			files_notebook = new Gtk.Notebook();
 			files_notebook.switch_page.connect((page,num) => {update_title(file_at_page((int)num));});
@@ -441,10 +372,10 @@ namespace VaEdit {
 				string path = string.joinv("/",raw_path)+"/";
 				file.filename = filename;
 				file.filepath = path;
-				file.label.set_text(filename);
 			}
 			FileUtils.set_contents(file.filepath+file.filename,file.view.buffer.text);
 			file.modified = false;
+			file.label.set_text(file.filename);
 			update_title();
 		}
 		
@@ -495,6 +426,104 @@ namespace VaEdit {
 				}
 			}
 		}
+		
+		private void menu_file_open() {
+			Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog(_("Select file"),main_window,Gtk.FileChooserAction.OPEN,Gtk.STOCK_OPEN,1,Gtk.STOCK_CANCEL,2,null);
+			dialog.set_current_folder((current_file() != null && current_file().filepath != "" ? current_file().filepath : Environment.get_home_dir()));
+			dialog.file_activated.connect(() => {
+				open_file_from_path(dialog.get_filename().split("/"));
+				dialog.destroy();
+			});
+			dialog.response.connect((id) => {
+				if(id==2 || dialog.get_filename() == null){dialog.destroy(); return;}
+				open_file_from_path(dialog.get_filename().split("/"));
+				dialog.destroy();
+			});
+			dialog.run();			
+		}
+		
+		private void menu_file_save() {
+			foreach(File file in files) {
+				if(files_notebook.page_num(file.scroll) == files_notebook.page) {
+					print("\""+file.filepath+"\"\n");
+					if(file.filepath.strip().length == 0) {
+						Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog(_("Choose a file name"),main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
+						dialog.set_current_folder((file.filepath == "" ? Environment.get_home_dir() : file.filepath));
+						dialog.file_activated.connect(() => {
+							Gtk.MessageDialog confirm_dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,_("That file alreadly exists. Overwrite?"));
+							confirm_dialog.response.connect((id) => {
+								confirm_dialog.destroy();
+								if(id == Gtk.ResponseType.YES && dialog.get_filename() != null) {
+									save_file(file,dialog.get_filename().split("/"));
+								}
+								dialog.destroy();
+							});
+							confirm_dialog.run();
+						});
+						dialog.response.connect((id) => {
+							if(id==2){dialog.destroy(); return;}
+							save_file(file,dialog.get_filename().split("/"));
+							dialog.destroy();
+						});
+						dialog.run();
+					} else {
+						save_file(file);
+					}
+					break;
+				}
+			}			
+		}
+		
+		private void menu_file_save_as() {
+			foreach(File file in files) {
+				if(files_notebook.page_num(file.scroll) == files_notebook.page) {
+					print("\""+file.filepath+"\"\n");
+					Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog(_("Choose a file name"),main_window,Gtk.FileChooserAction.SAVE,Gtk.STOCK_SAVE,1,Gtk.STOCK_CANCEL,2,null);
+					dialog.set_current_folder((file.filepath == "" ? Environment.get_home_dir() : file.filepath));
+					dialog.file_activated.connect(() => {
+						Gtk.MessageDialog confirm_dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,_("That file alreadly exists. Overwrite?"));
+						confirm_dialog.response.connect((id) => {
+							confirm_dialog.destroy();
+							if(id == Gtk.ResponseType.YES) {
+								save_file(file,dialog.get_filename().split("/"));
+							}
+							dialog.destroy();
+						});
+						confirm_dialog.run();
+					});
+					dialog.response.connect((id) => {
+						if(id==2){dialog.destroy(); return;}
+						save_file(file,dialog.get_filename().split("/"));
+						dialog.destroy();
+					});
+					dialog.run();
+					break;
+				}
+			}			
+		}
+		
+		private void menu_file_close() {
+			foreach(File file in files) {
+				if(files_notebook.page_num(file.scroll) == files_notebook.page) {
+					if(file.modified) {
+						Gtk.MessageDialog dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,_("The file has unsaved changes, close anyway?"));
+						dialog.response.connect((response) => {
+							dialog.destroy();
+							if(response == Gtk.ResponseType.YES) {
+								close_file(file);
+							} else {
+								return; // Do nothing
+							}
+						});
+						dialog.run();
+					} else {
+						close_file(file);
+					}
+					break;
+				}
+			}		
+		}
+	
 	}
 	
 	public class File {
@@ -528,7 +557,11 @@ namespace VaEdit {
 				buffer.text = file;
 				buffer.end_not_undoable_action();
 			}
-			buffer.changed.connect(() => {modified = true;gui.update_title();});
+			buffer.changed.connect(() => {
+				modified = true;
+				label.set_markup("<b>* "+this.filename+"</b>");
+				gui.update_title();
+			});
 		}
 	}
 	
