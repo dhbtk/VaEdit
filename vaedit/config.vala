@@ -6,7 +6,11 @@ namespace VaEdit {
 		// INI-ish thing
 		public static HashMap<string,HashMap<string,string>> parse_file(string fname,HashMap<string,HashMap<string,string>>? existing_hash = null) {
 			string raw_file;
-			FileUtils.get_contents(fname,out raw_file,null);
+			try {
+				FileUtils.get_contents(fname,out raw_file,null);
+			} catch(Error e) {
+				raw_file = "";
+			}
 			string[] split_file = raw_file.split("\n");
 			string section = "core"; // A default so things don't choke
 			HashMap<string,HashMap<string,string>> result;
@@ -64,7 +68,11 @@ namespace VaEdit {
 					output += key+" = "+config[section][key]+"\n";
 				}
 			}
-			FileUtils.set_contents(Environment.get_home_dir()+"/.vaeditrc",output);
+			try {
+				FileUtils.set_contents(Environment.get_home_dir()+"/.vaeditrc",output);
+			} catch(Error e) {
+				
+			}
 		}
 	}
 }

@@ -374,17 +374,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 			if(files.size == 1 && files[0].filename == _("untitled") && files[0].filepath == "" && files[0].modified == false) {
 				close_file(files[0]);
 			}
+			try {
+				File file = new File(name,path);
+				files.add(file);
+				files_notebook.append_page(file.scroll,new FileLabel(file).hbox);
+				files_notebook.show_all();
+				files_notebook.page = files_notebook.page_num(file.scroll);
+				files_notebook.set_tab_reorderable(file.scroll,true);
+				file.view.grab_focus();
+				apply_settings();
 			
-			File file = new File(name,path);
-			files.add(file);
-			files_notebook.append_page(file.scroll,new FileLabel(file).hbox);
-			files_notebook.show_all();
-			files_notebook.page = files_notebook.page_num(file.scroll);
-			files_notebook.set_tab_reorderable(file.scroll,true);
-			file.view.grab_focus();
-			apply_settings();
-			
-			return true;
+				return true;
+			} catch(Error e) {
+				Gtk.MessageDialog dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.ERROR,Gtk.ButtonsType.OK,_("There was an error opening the file."));
+				dialog.response.connect(()=>{dialog.destroy();});
+				dialog.run();
+				return false;
+			}
 		}
 		
 		public File? current_file() {
@@ -446,10 +452,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 				file.filename = filename;
 				file.filepath = path;
 			}
-			FileUtils.set_contents(file.filepath+file.filename,file.view.buffer.text);
-			file.modified = false;
-			file.label.set_text(file.filename);
-			update_title();
+			try {
+				FileUtils.set_contents(file.filepath+file.filename,file.view.buffer.text);
+				file.modified = false;
+				file.label.set_text(file.filename);
+				update_title();
+			} catch(Error e) {
+				Gtk.Dialog dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.ERROR,Gtk.ButtonsType.OK,_("Error saving file: access is denied."));
+				dialog.response.connect(()=>{dialog.destroy();});
+				dialog.run();
+			}
 		}
 		
 		private bool quit_app() {
