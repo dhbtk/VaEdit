@@ -703,6 +703,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 	}
 	
 	void main(string[] args) {
+		Intl.bindtextdomain(APPNAME,LOCALEDIR);
+		Intl.bind_textdomain_codeset(APPNAME,"UTF-8");
+		Intl.textdomain(APPNAME);
 		Gtk.init(ref args);
 		gui = new GUI();
 		
