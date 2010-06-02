@@ -1,0 +1,14 @@
+How to install
+==============
+
+VaEdit uses the waf build system, requiring the Python interpreter to be installed. It depends on
+Vala 0.8.0, GTK+ 2.10+ and GtkSourceView 2.10+. The common install procedure is:
+
+$ ./waf configure --prefix=/usr
+$ ./waf build
+
+And, with root privileges:
+
+# ./waf install
+
+You can uninstall with "./waf uninstall" as well, again as root.
