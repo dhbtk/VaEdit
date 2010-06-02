@@ -48,6 +48,7 @@ namespace VaEdit {
 			file_menu.append(file_open);
 			file_open.activate.connect(menu_file_open);
 			
+			file_menu.append(new Gtk.MenuItem());
 			// Save file
 			Gtk.ImageMenuItem file_save = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_SAVE,accelerators);
 			file_menu.append(file_save);
@@ -58,6 +59,7 @@ namespace VaEdit {
 			file_menu.append(file_save_as);
 			file_save_as.activate.connect(menu_file_save_as);
 			
+			file_menu.append(new Gtk.MenuItem());
 			// Close file
 			Gtk.ImageMenuItem file_close = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_CLOSE,accelerators);
 			file_menu.append(file_close);
@@ -97,7 +99,8 @@ namespace VaEdit {
 				}
 			});
 			edit_redo.add_accelerator("activate",accelerators,Gdk.keyval_from_name("Z"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.SHIFT_MASK,Gtk.AccelFlags.VISIBLE);
-			
+
+			edit_menu.append(new Gtk.MenuItem());			
 			// Preferences
 			Gtk.ImageMenuItem edit_preferences = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_PREFERENCES,accelerators);
 			edit_menu.append(edit_preferences);
@@ -243,6 +246,7 @@ namespace VaEdit {
 				});
 				view_languages.append(lang);
 			}
+			view_menu.append(new Gtk.MenuItem());
 			
 			// Previous file
 			Gtk.MenuItem view_prev_file = new Gtk.MenuItem.with_mnemonic(_("_Previous file"));
@@ -323,6 +327,7 @@ namespace VaEdit {
 			files_notebook.show_all();
 			files_notebook.page = files_notebook.page_num(file.scroll);
 			files_notebook.set_tab_reorderable(file.scroll,true);
+			file.view.grab_focus();
 			apply_settings();
 			
 			return true;
