@@ -12,6 +12,7 @@ namespace VaEdit {
 		private SList<Gtk.RadioMenuItem> language_radios = new SList<Gtk.RadioMenuItem>();
 		private LinkedList<Gtk.SourceLanguage> languages = new LinkedList<Gtk.SourceLanguage>();
 		public Gtk.RadioMenuItem none_button;
+		private Gtk.MenuItem[] files_menu = new Gtk.MenuItem[8];
 		
 		public GUI() {
 			// Setting up the GUI
@@ -247,11 +248,13 @@ namespace VaEdit {
 			Gtk.MenuItem view_prev_file = new Gtk.MenuItem.with_mnemonic(_("_Previous file"));
 			view_prev_file.activate.connect(files_notebook.prev_page);
 			view_prev_file.add_accelerator("activate",accelerators,Gdk.keyval_from_name("pagedown"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
+			view_menu.append(view_prev_file);
 			
 			// Next file
 			Gtk.MenuItem view_next_file = new Gtk.MenuItem.with_mnemonic(_("_Next file"));
 			view_next_file.activate.connect(files_notebook.next_page);
 			view_prev_file.add_accelerator("activate",accelerators,Gdk.keyval_from_name("pageup"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
+			view_menu.append(view_next_file);
 			
 			// Toolbar!
 			Gtk.Toolbar toolbar = new Gtk.Toolbar();
@@ -276,6 +279,16 @@ namespace VaEdit {
 			files_notebook = new Gtk.Notebook();
 			files_notebook.switch_page.connect((page,num) => {update_title(file_at_page((int)num));});
 			main_vbox.pack_start(files_notebook,true,true,0);
+			
+			// Shortcuts for tabs!
+			view_menu.append(new Gtk.MenuItem());
+			for(int i = 0;i <= 8; i++) {
+				print("Adding\n");
+				files_menu[i] = new Gtk.MenuItem.with_label(_("File %d").printf(i+1));
+				files_menu[i].add_accelerator("activate",accelerators,Gdk.keyval_from_name((i+1).to_string()),Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
+				files_menu[i].activate.connect(() => {print("Calling\n");files_notebook.page = (i+1);});
+				view_menu.append(files_menu[i]);
+			}
 			
 			main_window.show_all();
 			
@@ -309,6 +322,7 @@ namespace VaEdit {
 			files_notebook.append_page(file.scroll,new FileLabel(file).hbox);
 			files_notebook.show_all();
 			files_notebook.page = files_notebook.page_num(file.scroll);
+			files_notebook.set_tab_reorderable(file.scroll,true);
 			apply_settings();
 			
 			return true;
