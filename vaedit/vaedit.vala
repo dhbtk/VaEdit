@@ -306,7 +306,7 @@ namespace VaEdit {
 			
 			File file = new File(name,path);
 			files.add(file);
-			files_notebook.append_page(file.scroll,file.label);
+			files_notebook.append_page(file.scroll,new FileLabel(file).hbox);
 			files_notebook.show_all();
 			files_notebook.page = files_notebook.page_num(file.scroll);
 			apply_settings();
@@ -350,7 +350,7 @@ namespace VaEdit {
 			return null;
 		}
 		
-		private void close_file(File file) {
+		public void close_file(File file) {
 			files_notebook.remove_page(files_notebook.page_num(file.scroll));
 			files.remove(file);
 			update_title();
@@ -562,6 +562,58 @@ namespace VaEdit {
 				label.set_markup("<b>* "+this.filename+"</b>");
 				gui.update_title();
 			});
+		}
+	}
+	
+	private class FileLabel {
+		public Gtk.HBox hbox;
+		private Gtk.Label label;
+		private Gtk.Button button;
+		private File file;
+		
+		public FileLabel(File file) {
+			this.file = file;
+			label = file.label;
+			label.set_alignment((float)0.0,(float)0.5);
+			label.set_padding(0,0);
+			
+			hbox = new Gtk.HBox(false,0);
+			
+			// ITF: we copy gedit
+			button = new Gtk.Button();
+			button.image = new Gtk.Image.from_stock(Gtk.STOCK_CLOSE,Gtk.IconSize.MENU);
+			button.relief = Gtk.ReliefStyle.NONE;
+			button.image_position = Gtk.PositionType.TOP|Gtk.PositionType.LEFT;
+			button.focus_on_click = false;
+			Gtk.RcStyle style = new Gtk.RcStyle();
+			style.xthickness = style.ythickness = 0;
+			int w;
+			int h;
+			Gtk.icon_size_lookup_for_settings(button.get_settings(),Gtk.IconSize.MENU,out w,out h);
+			w += 2;
+			h += 2;
+			button.set_size_request(w,h);
+			
+			button.modify_style(style);
+			button.clicked.connect(() => {
+				if(file.modified) {
+					Gtk.MessageDialog dialog = new Gtk.MessageDialog(gui.main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.WARNING,Gtk.ButtonsType.YES_NO,_("The file has unsaved changes, close anyway?"));
+					dialog.response.connect((response) => {
+						dialog.destroy();
+						if(response == Gtk.ResponseType.YES) {
+							gui.close_file(file);
+						} else {
+							return; // Do nothing
+						}
+					});
+					dialog.run();
+				} else {
+					gui.close_file(file);
+				}
+			});
+			hbox.pack_start(label,false,false,0);
+			hbox.pack_start(button,false,false,0);
+			hbox.show_all();
 		}
 	}
 	
