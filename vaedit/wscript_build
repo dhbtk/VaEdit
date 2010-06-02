@@ -2,7 +2,7 @@
 
 obj = bld(
 	features  = 'cc cprogram',
-	packages  = 'gtk+-2.0 gtksourceview-2.0 gio-2.0 gee-1.0',
+	packages  = 'gtk+-2.0 gtksourceview-2.0 gio-2.0 gee-1.0 config',
 	target    = 'vaedit',
 	vapi_dirs = 'vapi',
 	ccflags   = ['-include','config.h'],
