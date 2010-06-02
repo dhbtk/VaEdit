@@ -222,10 +222,21 @@ namespace VaEdit {
 				rmar_hbox.pack_start(rmar_label,false,true,0);
 				dialog.vbox.pack_start(rmar_hbox,false,true,4);
 				
-				Gtk.Label font_label = new Gtk.Label("Font:");
+				Gtk.Label font_label = new Gtk.Label(_("Font:"));
 				dialog.vbox.pack_start(font_label,false,true,4);
 				Gtk.FontButton font = new Gtk.FontButton.with_font(config["core"]["font"]);
 				dialog.vbox.pack_start(font,false,true,4);
+				
+				Gtk.Label scheme_label = new Gtk.Label(_("Color scheme:"));
+				dialog.vbox.pack_start(scheme_label,false,true,4);
+				Gtk.ComboBox scheme_box = new Gtk.ComboBox.text();
+				dialog.vbox.pack_start(scheme_box,false,true,4);
+				
+				SList<string> names_list = new SList<string>();
+				foreach(string id in Gtk.SourceStyleSchemeManager.get_default().get_scheme_ids()) {
+					names_list.append(Gtk.SourceStyleSchemeManager.get_default().get_scheme(id).get_name());
+					scheme_box.append_text(Gtk.SourceStyleSchemeManager.get_default().get_scheme(id).get_name());
+				}
 				
 				dialog.show_all();
 				
@@ -238,6 +249,15 @@ namespace VaEdit {
 				highlight_matching_brackets.active = config["core"]["highlight_matching_brackets"] == "true";
 				show_right_margin.active           = config["core"]["show_right_margin"] == "true";
 				right_margin_column.value          = config["core"]["right_margin_position"].to_int();
+				int i = 0;
+				foreach(string name in names_list) {
+					if(name == config["core"]["color_scheme"]) {
+						scheme_box.active = i;
+						break;
+					}
+					i++;
+				}
+				
 				dialog.response.connect((id) => {
 					dialog.destroy();
 					if(id == Gtk.ResponseType.ACCEPT) {
@@ -249,6 +269,7 @@ namespace VaEdit {
 						config["core"]["highlight_matching_brackets"] = highlight_matching_brackets.active ? "true" : "false";
 						config["core"]["show_right_margin"] = show_right_margin.active ? "true" : "false";
 						config["core"]["font"] = font.font_name;
+						config["core"]["color_scheme"] = names_list.nth_data(scheme_box.active);
 						config_manager.save_data();
 						apply_settings();
 					} else {
@@ -466,8 +487,6 @@ namespace VaEdit {
 				
 				Gtk.SourceStyleSchemeManager.get_default().prepend_search_path("/usr/share/gtksourceview-2.0/styles");
 				foreach(string id in Gtk.SourceStyleSchemeManager.get_default().get_scheme_ids()) {
-					print(id+"\n");
-					print(Gtk.SourceStyleSchemeManager.get_default().get_scheme(id).name+"\n");
 					if(Gtk.SourceStyleSchemeManager.get_default().get_scheme(id).name == config["core"]["color_scheme"]) {
 						scheme = Gtk.SourceStyleSchemeManager.get_default().get_scheme(id);
 						file.buffer.style_scheme = scheme;
