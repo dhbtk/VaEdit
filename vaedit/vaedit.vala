@@ -260,6 +260,25 @@ namespace VaEdit {
 			view_prev_file.add_accelerator("activate",accelerators,Gdk.keyval_from_name("pageup"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
 			view_menu.append(view_next_file);
 			
+			// Help menu
+			Gtk.MenuItem help_menu_item = new Gtk.MenuItem.with_mnemonic(_("_Help"));
+			menu_bar.append(help_menu_item);
+			Gtk.Menu help_menu = new Gtk.Menu();
+			help_menu_item.submenu = help_menu;
+			
+			// Help contents
+			Gtk.ImageMenuItem help_contents = new Gtk.ImageMenuItem.with_mnemonic(_("_Contents"));
+			help_menu.append(help_contents);
+			help_contents.image = new Gtk.Image.from_stock(Gtk.STOCK_HELP,Gtk.IconSize.MENU);
+			help_contents.add_accelerator("activate",accelerators,Gdk.keyval_from_name("F1"),0,Gtk.AccelFlags.VISIBLE);
+			help_contents.activate.connect(() => {print("Not implemented yet\n");});
+			
+			help_menu.append(new Gtk.MenuItem());
+			
+			// About!
+			Gtk.ImageMenuItem help_about = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_ABOUT,accelerators);
+			help_menu.append(help_about);
+			
 			// Toolbar!
 			Gtk.Toolbar toolbar = new Gtk.Toolbar();
 			main_vbox.pack_start(toolbar,false,true,0);
