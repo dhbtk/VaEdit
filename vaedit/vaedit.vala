@@ -1,5 +1,8 @@
 using Gee;
 namespace VaEdit {
+	errordomain UTF8Error {
+		INVALID
+	}
 	GUI gui;
 	public class GUI {
 		public Gtk.Window main_window;
@@ -14,7 +17,7 @@ namespace VaEdit {
 		public Gtk.RadioMenuItem none_button;
 		private Gtk.MenuItem[] files_menu = new Gtk.MenuItem[8];
 		
-		public GUI() {
+		public GUI(string[] args) {
 			// Setting up the GUI
 			accelerators = new Gtk.AccelGroup();
 			main_window = new Gtk.Window(Gtk.WindowType.TOPLEVEL);
@@ -213,9 +216,9 @@ namespace VaEdit {
 				languages.add(Gtk.SourceLanguageManager.get_default().get_language(id));
 			}
 			languages.sort((langa,langb) => {
-				if((langa as Gtk.SourceLanguage).name > (langb as Gtk.SourceLanguage).name) {
+				if((langa as Gtk.SourceLanguage).name.down() > (langb as Gtk.SourceLanguage).name.down()) {
 					return 1;
-				} else if((langa as Gtk.SourceLanguage).name == (langb as Gtk.SourceLanguage).name) {
+				} else if((langa as Gtk.SourceLanguage).name.down() == (langb as Gtk.SourceLanguage).name.down()) {
 					return 0;
 				} else {
 					return -1;
@@ -332,20 +335,47 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 			Gtk.ToolButton save_button = new Gtk.ToolButton.from_stock(Gtk.STOCK_SAVE);
 			toolbar.insert(save_button,3);
 			save_button.clicked += menu_file_save;
+			// Moar separator
+			toolbar.insert(new Gtk.SeparatorToolItem(),4);
+			// Undo
+			Gtk.ToolButton undo_button = new Gtk.ToolButton.from_stock(Gtk.STOCK_UNDO);
+			toolbar.insert(undo_button,5);
+			undo_button.clicked.connect(() => {
+				if(current_file() != null) {
+					current_file().buffer.undo();
+				}
+			});
+			// Redo
+			Gtk.ToolButton redo_button = new Gtk.ToolButton.from_stock(Gtk.STOCK_REDO);
+			toolbar.insert(redo_button,6);
+			redo_button.clicked.connect(() => {
+				if(current_file() != null) {
+					current_file().buffer.undo();
+				}
+			});
 			
 			// Notebook holding the files
 			files_notebook = new Gtk.Notebook();
 			files_notebook.switch_page.connect((page,num) => {update_title(file_at_page((int)num));});
+			files_notebook.page_reordered.connect(() => update_title());
 			main_vbox.pack_start(files_notebook,true,true,0);
 			
 			// Shortcuts for tabs!
 			view_menu.append(new Gtk.MenuItem());
-			for(int i = 0;i <= 8; i++) {
+			for(int n = 0;n < 9; n++) {
 				print("Adding\n");
-				files_menu[i] = new Gtk.MenuItem.with_label(_("File %d").printf(i+1));
-				files_menu[i].add_accelerator("activate",accelerators,Gdk.keyval_from_name((i+1).to_string()),Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
-				files_menu[i].activate.connect(() => {print("Calling\n");files_notebook.page = (i+1);});
-				view_menu.append(files_menu[i]);
+				files_menu[n] = new Gtk.MenuItem.with_label(_("File %d").printf(n+1));
+				files_menu[n].add_accelerator("activate",accelerators,Gdk.keyval_from_name((n+1).to_string()),Gdk.ModifierType.MOD1_MASK,Gtk.AccelFlags.VISIBLE);
+				int i = n;
+				files_menu[n].activate.connect(() => {
+					if(file_at_page(i) != null) {
+						print(file_at_page(i).filename+"\n");
+						files_notebook.page = i; // Redundancy redundancy redundancy
+					} else {
+						print("Null file\n");
+					}
+				});
+				view_menu.append(files_menu[n]);
 			}
 			
 			main_window.show_all();
@@ -354,8 +384,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 			config_manager = new ConfigManager();
 			config = config_manager.config;
 			
-			// Default file
-			open_file();
+			if(args.length != 1) {
+				int i = 0;
+				foreach(string arg in args) {
+					print(arg+"\n");
+					if(FileUtils.test(arg,FileTest.EXISTS|FileTest.IS_REGULAR) && i != 0) {
+						open_file_from_path(arg.split("/"));
+						i++;
+					}
+				}
+			} else {
+				// Default file
+				open_file();
+			}
 		}
 		
 		private bool open_file(string? name = null,string? path = null) {
@@ -417,6 +458,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 						}
 					}
 				}*/
+			}
+			int page = 0;
+			foreach(Gtk.MenuItem item in files_menu) {
+				item.visible = true;
+				if(file_at_page(page) != null) {
+					item.label = file_at_page(page).filename;
+				}
+				page++;
+			}
+			for(int i = files_notebook.get_n_pages(); i < 9; i++) {
+				files_menu[i].visible = false;
 			}
 		}
 		
@@ -639,6 +691,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 				string mimetype = g_content_type_guess(filepath+filename,(uchar[])file.to_utf8(),out result_uncertain);
 				buffer.language = Gtk.SourceLanguageManager.get_default().guess_language(filepath+filename,(result_uncertain ? null : mimetype));
 				buffer.begin_not_undoable_action();
+				if(!file.validate()) {
+					throw new UTF8Error.INVALID("Invalid encoding");
+				}
 				buffer.text = file;
 				buffer.end_not_undoable_action();
 			}
@@ -707,7 +762,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 		Intl.bind_textdomain_codeset(APPNAME,"UTF-8");
 		Intl.textdomain(APPNAME);
 		Gtk.init(ref args);
-		gui = new GUI();
+		gui = new GUI(args);
 		
 		Gtk.main();
 	}
