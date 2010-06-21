@@ -103,7 +103,17 @@ namespace VaEdit {
 			});
 			edit_redo.add_accelerator("activate",accelerators,Gdk.keyval_from_name("Z"),Gdk.ModifierType.CONTROL_MASK|Gdk.ModifierType.SHIFT_MASK,Gtk.AccelFlags.VISIBLE);
 
-			edit_menu.append(new Gtk.MenuItem());			
+			edit_menu.append(new Gtk.MenuItem());
+			
+			// Find
+			Gtk.ImageMenuItem edit_find = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_FIND,accelerators);
+			edit_menu.append(edit_find);
+			edit_find.activate.connect(() => {
+				menu_edit_find();
+			});
+			
+			edit_menu.append(new Gtk.MenuItem());
+			
 			// Preferences
 			Gtk.ImageMenuItem edit_preferences = new Gtk.ImageMenuItem.from_stock(Gtk.STOCK_PREFERENCES,accelerators);
 			edit_menu.append(edit_preferences);
@@ -423,6 +433,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 				files_notebook.page = files_notebook.page_num(file.scroll);
 				files_notebook.set_tab_reorderable(file.scroll,true);
 				file.view.grab_focus();
+				Gtk.TextIter start_iter;
+				file.buffer.get_start_iter(out start_iter);
+				file.buffer.place_cursor(start_iter);
 				apply_settings();
 			
 				return true;
@@ -660,7 +673,60 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 				}
 			}		
 		}
+		
+		// Find etc.
 	
+		private void menu_edit_find() {
+			if(current_file() == null) return;
+			Gtk.Dialog find_dialog = new Gtk.Dialog.with_buttons(_("Find"),main_window,Gtk.DialogFlags.DESTROY_WITH_PARENT,Gtk.STOCK_FIND,-1,Gtk.STOCK_CLOSE,-2,null);
+			Gtk.HBox query_box = new Gtk.HBox(false,0);
+			Gtk.Label query_label = new Gtk.Label(_("Query:"));
+			Gtk.Entry query = new Gtk.Entry();
+			query_box.pack_start(query_label,false,false,0);
+			query_box.pack_start(query,false,false,0);
+		
+			Gtk.CheckButton case_insensitive = new Gtk.CheckButton.with_label(_("Case-insensitive"));
+			Gtk.CheckButton search_backwards = new Gtk.CheckButton.with_label(_("Search backwards"));
+		
+			find_dialog.vbox.pack_start(query_box,false,false,0);
+			find_dialog.vbox.pack_start(case_insensitive,false,false,0);
+			find_dialog.vbox.pack_start(search_backwards,false,false,0);
+		
+			find_dialog.response.connect((id) => {
+				if(id == -1) {
+					Gtk.TextIter cursor_pos_iter;
+					bool found = false;
+					
+					current_file().buffer.get_iter_at_offset(out cursor_pos_iter,current_file().buffer.cursor_position);
+					
+					Gtk.TextIter match_start;
+					Gtk.TextIter match_end;
+					
+					if(search_backwards.active) {
+						found = Gtk.source_iter_backward_search(cursor_pos_iter,query.text,(case_insensitive.active ? Gtk.SourceSearchFlags.CASE_INSENSITIVE : 0),out match_start,out match_end,null);
+					} else {
+						found = Gtk.source_iter_forward_search(cursor_pos_iter,query.text,(case_insensitive.active ? Gtk.SourceSearchFlags.CASE_INSENSITIVE : 0),out match_start,out match_end,null);
+					}
+					if(found) {
+						current_file().view.scroll_to_iter(match_start,0,false,0,0);
+						if(search_backwards.active) {
+							current_file().buffer.place_cursor(match_start);
+						} else {
+							current_file().buffer.place_cursor(match_end);
+						}
+						current_file().view.grab_focus();
+						//current_file().buffer.select_range(match_start,match_end);
+					} else {
+						Gtk.MessageDialog dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.INFO,Gtk.ButtonsType.OK,_("No matches were found."));
+						dialog.response.connect(()=>{dialog.destroy();});
+						dialog.run();
+					}
+				} else {
+					find_dialog.destroy();
+				}
+			});
+			find_dialog.show_all();
+		}
 	}
 	
 	public class File {
