@@ -14,8 +14,10 @@ namespace VaEdit {
 		private Gtk.AccelGroup accelerators;
 		private SList<Gtk.RadioMenuItem> language_radios = new SList<Gtk.RadioMenuItem>();
 		private LinkedList<Gtk.SourceLanguage> languages = new LinkedList<Gtk.SourceLanguage>();
+		private bool language_menu_inactive = false;
 		public Gtk.RadioMenuItem none_button;
 		private Gtk.MenuItem[] files_menu = new Gtk.MenuItem[8];
+		private Gtk.Label info_label;
 		
 		public GUI(string[] args) {
 			// Setting up the GUI
@@ -239,7 +241,7 @@ namespace VaEdit {
 			//language_radios = none_button.get_group();
 			view_languages.append(none_button);
 			none_button.toggled.connect(() => {
-				if(none_button.active && current_file() != null) {
+				if(none_button.active && current_file() != null && !language_menu_inactive) {
 					current_file().buffer.language = null;
 				}
 			});
@@ -250,7 +252,7 @@ namespace VaEdit {
 				lang.toggled.connect(() => {
 					if(lang.active) {
 						foreach(Gtk.SourceLanguage _language in languages) {
-							if(lang.label == _language.name && current_file() != null) {
+							if(lang.label == _language.name && current_file() != null && !language_menu_inactive) {
 								current_file().buffer.language = _language;
 								break;
 							}
@@ -387,6 +389,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 				});
 				view_menu.append(files_menu[n]);
 			}
+			// Status bar
+			info_label = new Gtk.Label("");
+			info_label.justify = Gtk.Justification.LEFT;
+			main_vbox.pack_start(info_label,false,true,0);
 			
 			main_window.show_all();
 			
@@ -451,16 +457,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 			return file_at_page(files_notebook.page);
 		}
 		
-		public void update_title(owned File? file = null) {
+		public void update_title(owned File? file = null,int? char_count = null) {
 			if(file == null) {
 				file = current_file();
 			}
 			if(file == null) {
 				main_window.title = "VaEdit";
 				none_button.active = true;
+				info_label.label = "";
 			} else {
 				main_window.title = (file.modified ? "* " : "")+file.filename+" - "+file.filepath+" - VaEdit";
-				/*if(file.buffer.language == null) {
+				language_menu_inactive = true;
+				if(file.buffer.language == null) {
 					none_button.active = true;
 				} else {
 					print(file.buffer.language.name+"\n");
@@ -470,7 +478,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 							break;
 						}
 					}
-				}*/
+				}
+				language_menu_inactive = false;
+				info_label.label = get_cursor_pos(current_file(),char_count);
 			}
 			int page = 0;
 			foreach(Gtk.MenuItem item in files_menu) {
@@ -483,6 +493,36 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 			for(int i = files_notebook.get_n_pages(); i < 9; i++) {
 				files_menu[i].visible = false;
 			}
+		}
+		
+		private string get_cursor_pos(File file,int? char_count = null) {
+			int row;
+			int col;
+			int chars;
+			int tab_width;
+			Gtk.TextIter iter;
+			Gtk.TextIter start;
+			
+			tab_width = (int)file.view.get_tab_width();
+			
+			file.buffer.get_iter_at_mark(out iter,file.buffer.get_insert());
+			file.buffer.get_iter_at_mark(out start,file.buffer.get_insert());
+			chars = char_count ?? iter.get_offset();
+			row   = iter.get_line() + 1;
+			
+			col = 0;
+			start.set_line_offset(0);
+			
+			while(!start.equal(iter)) {
+				if(start.get_char() == '\t') {
+					col += (tab_width - (col % tab_width));
+				} else {
+					col++;
+				}
+				start.forward_char();
+			}
+			
+			return _("%s - Line %d, Column %d").printf(file.filename,row,col);
 		}
 		
 		private File? file_at_page(int page) {
@@ -521,6 +561,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 				FileUtils.set_contents(file.filepath+file.filename,file.view.buffer.text);
 				file.modified = false;
 				file.label.set_text(file.filename);
+				file.unchanged_text = file.buffer.text;
 				update_title();
 			} catch(Error e) {
 				Gtk.Dialog dialog = new Gtk.MessageDialog(main_window,Gtk.DialogFlags.MODAL,Gtk.MessageType.ERROR,Gtk.ButtonsType.OK,_("Error saving file: access is denied."));
@@ -737,6 +778,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 		public Gtk.SourceBuffer buffer;
 		public Gtk.ScrolledWindow scroll;
 		public bool modified = false;
+		public string unchanged_text = "";
 		
 		public File(string filename,string filepath) throws Error {
 			this.filename = filename;
@@ -764,10 +806,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.""";
 				buffer.end_not_undoable_action();
 			}
 			buffer.changed.connect(() => {
-				modified = true;
-				label.set_markup("<b>* "+this.filename+"</b>");
+				if(buffer.text == unchanged_text) {
+					label.label = this.filename;
+					modified    = false;
+				}
+				if(!modified) {
+					unchanged_text = buffer.text;
+					modified = true;
+					label.set_markup("<b>* "+this.filename+"</b>");
+				}
 				gui.update_title();
 			});
+			view.move_cursor.connect((step,count) => {gui.update_title();});
+			
 		}
 	}
 	
